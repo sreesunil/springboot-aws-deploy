@@ -1,0 +1,46 @@
+version: 0.2
+
+env:
+  variables:
+    SPRING_BOOT_JAR: "build/libs/my-search-app.jar"
+    IMAGE_NAME: "spring-boot-microservice"
+    ECR_REPO_NAME: "awsrepo"
+    AWS_REGION: "us-east-2" # Update with your AWS region
+    ECS_CLUSTER_NAME: "my-ecs-cluster" # Update with your ECS cluster name
+    ECS_SERVICE_NAME: "my-ecs-service" # Update with your ECS service name
+
+phases:
+  install:
+    runtime-versions:
+      java: 17
+      docker: 20
+    commands:
+      - echo "Installing dependencies..."
+      - gradle --version # Ensure Gradle is available
+  pre_build:
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - echo "Preparing for build..."
+  build:
+    commands:
+      - echo "Building Spring Boot application with Gradle..."
+      - gradle clean build -x test
+      - echo "Building Docker image..."
+      - docker build -t $IMAGE_NAME .
+      - docker tag $IMAGE_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:latest
+  post_build:
+    commands:
+      - echo "Pushing Docker image to Amazon ECR..."
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:latest
+      - echo "Deploying to ECS..."
+      - aws ecs update-service --cluster $ECS_CLUSTER_NAME --service $ECS_SERVICE_NAME --force-new-deployment
+
+artifacts:
+  files:
+    - $SPRING_BOOT_JAR
+  discard-paths: yes
+
+cache:
+  paths:
+    - "~/.gradle/caches/**/*"
