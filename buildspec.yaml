@@ -30,17 +30,16 @@ phases:
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Writing image definitions file...
       - printf '[{"name":"cicd-container","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - echo Writing image definitions file...
+      - DOCKER_CONTAINER_NAME=awsrepo
+      - printf '[{"name":"cicd-container","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - echo $DOCKER_CONTAINER_NAME
+      - echo printing imagedefinitions.json
       - cat imagedefinitions.json
+
 
 
 artifacts:
   files:
-    - '**/*'
     - imagedefinitions.json
-  base-directory: './build/libs'
-reports:
-  test-report-group: #Junit reports
-    files:
-      - 'TEST-boris.maths.MathsApplicationTests.xml'
-    #discard-paths: false #do not remove file paths from test result files
-    base-directory: './build/test-results/test'
+    - build/libs/my-search-app.jar
